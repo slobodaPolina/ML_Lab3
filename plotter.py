@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn import svm
 from sklearn.datasets import make_blobs
 from parameters import best_params
+from parameters import svc as parameters
 
 
 def colors(labels):
@@ -20,30 +21,32 @@ np_dataset = np.array(pd.read_csv(filename))
 coordinates = np_dataset[:, :-1]  # x and y coordinates of the point
 types = np_dataset[:, -1]  # answer (type for classification task)
 
-# добавляем фичи на график - массив абсцисс, соответствующий массив ординат, массив соответствующих цветов точек
-plt.scatter(coordinates[:, 0], coordinates[:, 1], c=colors(types), cmap=plt.cm.Paired)
+for kernel in parameters['kernel']:  # print for every kernel with standard params (gamma and degree)
 
-ax = plt.gca()
-# границы по обеим осям
-xlim = ax.get_xlim()
-ylim = ax.get_ylim()
-# делим график на 30 частей по каждой стороне
-xx = np.linspace(xlim[0], xlim[1], 30)
-yy = np.linspace(ylim[0], ylim[1], 30)
-# хитрая функция, которая может размножить значения этих точек
-YY, XX = np.meshgrid(yy, xx)
-# получаем все возможные пары (сетка равномерно раскиданных по графику точек)
-xy = np.vstack([XX.ravel(), YY.ravel()]).T
+    # добавляем фичи на график - массив абсцисс, соответствующий массив ординат, массив соответствующих цветов точек
+    plt.scatter(coordinates[:, 0], coordinates[:, 1], c=colors(types), cmap=plt.cm.Paired)
 
-# учим модель имеющимися данными
-model = svm.SVC(kernel=best_params[case]['kernel'], C=best_params[case]['regularization_strength'])
-model.fit(coordinates, types)
-# получаем решение модели и размножаем его для графка
-Z = model.decision_function(xy).reshape(XX.shape)
+    ax = plt.gca()
+    # границы по обеим осям
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    # делим график на 30 частей по каждой стороне
+    xx = np.linspace(xlim[0], xlim[1], 30)
+    yy = np.linspace(ylim[0], ylim[1], 30)
+    # хитрая функция, которая может размножить значения этих точек
+    YY, XX = np.meshgrid(yy, xx)
+    # получаем все возможные пары (сетка равномерно раскиданных по графику точек)
+    xy = np.vstack([XX.ravel(), YY.ravel()]).T
 
-# рисуем до данным координатам и решению модели линии на графике, 1 и 3 пунктиром, вторую сплошную
-ax.contour(XX, YY, Z, colors='k', levels=[-1, 0, 1], alpha=0.5, linestyles=['--', '-', '--'])
-# обводка для точек, которые не попали куда следует
-ax.scatter(model.support_vectors_[:, 0], model.support_vectors_[:, 1], s=100, linewidth=1, facecolors='none', edgecolors='k')
+    # учим модель имеющимися данными
+    model = svm.SVC(kernel=kernel, C=best_params[case]['regularization_strength'], gamma=best_params[case]['gamma'], degree=best_params[case]['degree'])
+    model.fit(coordinates, types)
+    # получаем решение модели и размножаем его для графка
+    Z = model.decision_function(xy).reshape(XX.shape)
 
-plt.show()
+    # рисуем до данным координатам и решению модели линии на графике, 1 и 3 пунктиром, вторую сплошную
+    ax.contour(XX, YY, Z, colors='k', levels=[-1, 0, 1], alpha=0.5, linestyles=['--', '-', '--'])
+    # обводка для точек, которые не попали куда следует
+    ax.scatter(model.support_vectors_[:, 0], model.support_vectors_[:, 1], s=100, linewidth=1, facecolors='none', edgecolors='k')
+    plt.ylabel(kernel)
+    plt.show()

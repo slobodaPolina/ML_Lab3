@@ -29,7 +29,7 @@ def svc(filename, parameters):
     # формируем массив из строк файла (x, y, type)
     dataset = np.concatenate((features, np.reshape(labels, (-1, 1))), axis=1)
     np.random.shuffle(dataset)
-    model = SVC(C=parameters['regularization_strength'], kernel=parameters['kernel'])
+    model = SVC(C=parameters['regularization_strength'], kernel=parameters['kernel'], degree=parameters['degree'], gamma=parameters['gamma'])
     fscores = []
 
     for test_parts_amount in range(svc_parameters['cross_validation_parts']):
@@ -54,7 +54,18 @@ filename = geyser  # HERE we can change it
 
 for kernel in svc_parameters['kernel']:
     for regularization_strength in svc_parameters['regularization_strength']:
-        parameters = {'kernel': kernel, 'regularization_strength': regularization_strength}
-        results.append({'avg_fscore': svc(filename, parameters), 'parameters': parameters})
+        if kernel == 'linear':
+            parameters = {'kernel': kernel, 'regularization_strength': regularization_strength, 'gamma': 'auto', 'degree': 1}  # fake params (they will not be used) not to fail in svc - do it better
+            results.append({'avg_fscore': svc(filename, parameters), 'parameters': parameters})
+        else:
+            for gamma in svc_parameters['gamma']:
+                if kernel == 'rbf' or kernel == 'sigmoid':
+                    parameters = {'kernel': kernel, 'regularization_strength': regularization_strength, 'gamma': gamma, 'degree': 1}
+                    results.append({'avg_fscore': svc(filename, parameters), 'parameters': parameters})
+                else:
+                    for degree in svc_parameters['degree']:
+                        if kernel == 'poly':
+                            parameters = {'kernel': kernel, 'regularization_strength': regularization_strength, 'gamma': gamma, 'degree': degree}
+                            results.append({'avg_fscore': svc(filename, parameters), 'parameters': parameters})
 results = sorted(results, key=lambda k: k['avg_fscore'], reverse=True)
 print(results[0])
